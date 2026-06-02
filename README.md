@@ -25,8 +25,10 @@ Visit: http://127.0.0.1:8000
 | Username   | Password  | Role     |
 |------------|-----------|----------|
 | admin      | demo1234  | Admin    |
-| manager    | demo1234  | Manager  |
-| employee   | demo1234  | Employee |
+| surendra   | demo1234  | Manager  |
+| tara       | demo1234  | Manager  |
+| roshan     | demo1234  | Manager  |
+| sujan      | demo1234  | Employee |
 
 ---
 
