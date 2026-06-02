@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="login-page">
+  <div class="login-box">
+    <div class="login-brand">
+      <span class="login-logo">J</span>
+      <div class="login-title">Jyaba Tech</div>
+      <div class="login-subtitle">Invoice Management System</div>
+    </div>
+
+    {% if messages %}
+    <ul class="messages" style="margin-bottom:16px;">
+      {% for message in messages %}
+      <li class="{{ message.tags }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="login-form-group">
+        <label for="id_username">Username</label>
+        {{ form.username }}
+      </div>
+      <div class="login-form-group">
+        <label for="id_password">Password</label>
+        {{ form.password }}
+      </div>
+      <button type="submit" class="login-submit">Sign In →</button>
+    </form>
+
+    <p style="text-align:center; margin-top:20px; font-size:11px; color:#8A7F7A;">
+     
+    </p>
+  </div>
+</div>
+{% endblock %}

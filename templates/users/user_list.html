@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Users{% endblock %}
+{% block page_title %}User Management{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'user_create' %}" class="btn btn-primary">+ New User</a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th><th>Full Name</th><th>Email</th>
+          <th>Role</th><th>Department</th><th>Joined</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.username }}</strong></td>
+          <td>{{ u.get_full_name|default:"—" }}</td>
+          <td>{{ u.email|default:"—" }}</td>
+          <td>
+            {% if u.profile %}
+            <span class="badge {% if u.profile.role == 'admin' %}badge-rejected{% elif u.profile.role == 'manager' %}badge-pending{% else %}badge-draft{% endif %}">
+              {{ u.profile.get_role_display }}
+            </span>
+            {% else %}<span class="badge badge-draft">Employee</span>{% endif %}
+          </td>
+          <td>{% if u.profile %}{{ u.profile.department|default:"—" }}{% else %}—{% endif %}</td>
+          <td>{{ u.date_joined|date:"d M Y" }}</td>
+          <td><a href="{% url 'user_edit' u.pk %}" class="btn btn-outline btn-sm">Edit Role</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

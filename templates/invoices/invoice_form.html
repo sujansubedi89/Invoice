@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Invoice{% endblock %}
+{% block page_title %}{{ action }} Invoice{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'invoice_list' %}" class="btn btn-outline btn-sm">← Back</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-heading {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; font-weight: 600;
+    color: var(--text); margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="invoiceForm">
+  {% csrf_token %}
+  {{ formset.management_form }}  {# Required hidden fields for the formset #}
+
+  <div style="display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start;">
+
+    <!-- LEFT: Main form -->
+    <div>
+
+      <!-- Client Info -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Client / Vendor Information</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Client / Vendor Name *</label>
+              {{ form.vendor_client }}
+              {% if form.vendor_client.errors %}<span style="color:var(--danger);font-size:12px;">{{ form.vendor_client.errors.0 }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+              <label>Client Email</label>
+              {{ form.vendor_email }}
+            </div>
+            <div class="form-group full-width">
+              <label>Client Address</label>
+              {{ form.vendor_address }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Service Details -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Service Details</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label>Service Title *</label>
+              {{ form.service_title }}
+              {% if form.service_title.errors %}<span style="color:var(--danger);font-size:12px;">{{ form.service_title.errors.0 }}</span>{% endif %}
+            </div>
+            <div class="form-group">
+              <label>Invoice Date</label>
+              {{ form.invoice_date }}
+            </div>
+            <div class="form-group">
+              <label>Due Date</label>
+              {{ form.due_date }}
+            </div>
+            <div class="form-group">
+              <label>Currency</label>
+              {{ form.currency }}
+            </div>
+            <div class="form-group">
+              <label>Tax Rate (%)</label>
+              {{ form.tax_rate }}
+            </div>
+            <div class="form-group full-width">
+              <label>Notes</label>
+              {{ form.notes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Line Items</span>
+          <span style="font-size:12px;color:var(--text-muted);">Add services, products or work items</span>
+        </div>
+        <div class="card-body" style="padding-bottom:16px;">
+
+          <!-- Column headers -->
+          <div class="line-items-header">
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Description</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:center;">Units</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:right;">Unit Price</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:right;">Total</span>
+            <span></span>
+          </div>
+
+          <div id="lineItemsContainer">
+            {% for item_form in formset %}
+            <div class="line-item-row" id="row-{{ forloop.counter0 }}">
+              {{ item_form.id }}
+              {% if item_form.DELETE %}
+              <div style="display:none;">{{ item_form.DELETE }}</div>
+              {% endif %}
+              {{ item_form.description }}
+              {{ item_form.units }}
+              {{ item_form.unit_price }}
+              <div class="li-total" id="total-{{ forloop.counter0 }}">—</div>
+              <button type="button" class="li-delete-btn" onclick="removeLine(this)">✕</button>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="add-line-item-btn" onclick="addLineItem()">
+            + Add Line Item
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Summary + Actions -->
+    <div>
+      <div class="card" style="position:sticky; top:80px;">
+        <div class="card-header"><span class="card-title">Invoice Summary</span></div>
+        <div class="card-body">
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span style="color:var(--text-muted); font-size:13px;">Subtotal</span>
+            <span id="summarySubtotal" style="font-size:13px; font-weight:600;">0.00</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <span style="color:var(--text-muted); font-size:13px;">Tax</span>
+            <span id="summaryTax" style="font-size:13px;">0.00</span>
+          </div>
+          <div class="divider"></div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:14px; font-weight:700;">Total</span>
+            <span id="summaryTotal" style="font-size:16px; font-weight:700; color:var(--brand);">0.00</span>
+          </div>
+
+          <div class="divider" style="margin:20px 0;"></div>
+
+          <button type="submit" name="save_draft" class="btn btn-outline" style="width:100%; margin-bottom:10px; justify-content:center;">
+            💾 Save Draft
+          </button>
+          <button type="submit" name="submit_approval" class="btn btn-primary" style="width:100%; justify-content:center;">
+            📤 Submit for Approval
+          </button>
+
+          {% if invoice %}
+          <div class="divider" style="margin:16px 0;"></div>
+          <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline" style="width:100%; justify-content:center;">
+            Cancel
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * LINE ITEM JAVASCRIPT
+ * Handles dynamic add/remove of line item rows
+ * and real-time total calculations
+ */
+
+// Track how many forms exist (Django formset needs this)
+let formCount = parseInt(document.querySelector('[name="form-TOTAL_FORMS"]').value);
+
+// Recalculate all totals whenever any input changes
+document.addEventListener('input', function(e) {
+  if (e.target.matches('.li-units, .li-price')) {
+    recalcAll();
+  }
+  if (e.target.name === 'tax_rate') {
+    recalcAll();
+  }
+});
+
+function recalcAll() {
+  let subtotal = 0;
+  const rows = document.querySelectorAll('.line-item-row:not([style*="display: none"])');
+  
+  rows.forEach((row, i) => {
+    const units = parseFloat(row.querySelector('.li-units')?.value) || 0;
+    const price = parseFloat(row.querySelector('.li-price')?.value) || 0;
+    const total = units * price;
+    subtotal += total;
+    
+    // Find the total display cell for this row
+    const totalCell = row.querySelector('[id^="total-"]');
+    if (totalCell) totalCell.textContent = total.toFixed(2);
+  });
+
+  const taxRate = parseFloat(document.querySelector('[name="tax_rate"]')?.value) || 0;
+  const taxAmt  = (subtotal * taxRate) / 100;
+  const grand   = subtotal + taxAmt;
+
+  document.getElementById('summarySubtotal').textContent = subtotal.toFixed(2);
+  document.getElementById('summaryTax').textContent = taxAmt.toFixed(2);
+  document.getElementById('summaryTotal').textContent = grand.toFixed(2);
+}
+
+function addLineItem() {
+  /**
+   * Clone the first row's HTML and update all field name/id attributes
+   * to use the new form index. Django formsets require names like:
+   *   form-0-description, form-1-description, form-2-description
+   */
+  const container = document.getElementById('lineItemsContainer');
+  const firstRow = container.querySelector('.line-item-row');
+  const newRow = firstRow.cloneNode(true);
+  
+  // Update all name/id attributes to use new index
+  newRow.id = `row-${formCount}`;
+  newRow.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.name) el.name = el.name.replace(/form-\d+-/, `form-${formCount}-`);
+    if (el.id)   el.id   = el.id.replace(/form-\d+-/, `form-${formCount}-`);
+    // Clear values in the new row (except units which defaults to 1)
+    if (!el.classList.contains('li-units')) el.value = '';
+    else el.value = '1';
+  });
+  
+  // Reset the total display
+  const totalCell = newRow.querySelector('[id^="total-"]');
+  if (totalCell) { totalCell.id = `total-${formCount}`; totalCell.textContent = '—'; }
+  
+  container.appendChild(newRow);
+  
+  // Tell Django there's one more form
+  formCount++;
+  document.querySelector('[name="form-TOTAL_FORMS"]').value = formCount;
+}
+
+function removeLine(btn) {
+  const row = btn.closest('.line-item-row');
+  // Check for Django's DELETE checkbox (for existing items)
+  const deleteCheck = row.querySelector('input[name*="-DELETE"]');
+  if (deleteCheck) {
+    deleteCheck.checked = true;
+    row.style.display = 'none';  // Hide instead of remove (Django needs it)
+  } else {
+    row.remove();
+  }
+  recalcAll();
+}
+
+// Run on page load to set initial totals (for edit mode)
+recalcAll();
+</script>
+{% endblock %}

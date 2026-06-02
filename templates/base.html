@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Invoice System{% endblock %} — Jyaba Tech</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<div class="app-layout">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">Jyaba Tech</div>
+      <div class="brand-sub">Invoice System</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+        <span class="nav-icon">⬛</span> Dashboard
+      </a>
+      <a href="{% url 'invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+        <span class="nav-icon">📄</span> Invoices
+      </a>
+      <a href="{% url 'invoice_create' %}">
+        <span class="nav-icon">➕</span> New Invoice
+      </a>
+
+      {% if request.user.profile.role in 'admin,manager' %}
+      <div class="nav-section" style="margin-top:16px;">Approval</div>
+      <a href="{% url 'invoice_list' %}?status=pending">
+        <span class="nav-icon">⏳</span> Pending Review
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role == 'admin' %}
+      <div class="nav-section" style="margin-top:16px;">Admin</div>
+      <a href="{% url 'user_list' %}" class="{% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+        <span class="nav-icon">👥</span> Users
+      </a>
+      <a href="/admin/" target="_blank">
+        <span class="nav-icon">🔧</span> Django Admin
+      </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+        <div>
+          <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+          <div class="user-role">
+            {% if request.user.profile %}{{ request.user.profile.get_role_display }}{% else %}Employee{% endif %}
+          </div>
+        </div>
+      </div>
+      <a href="{% url 'logout' %}" style="display:flex;align-items:center;gap:8px;padding:8px 10px;color:rgba(255,255,255,0.35);text-decoration:none;font-size:12px;margin-top:6px;border-radius:6px;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+        <span>↩</span> Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ── -->
+  <div class="main-content">
+    <header class="topbar">
+      <h1 class="topbar-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </header>
+
+    <main class="page-content">
+      <!-- Flash Messages -->
+      {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+        <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+{% else %}
+  {% block auth_content %}{% endblock %}
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

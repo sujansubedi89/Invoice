@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Invoices{% endblock %}
+{% block page_title %}All Invoices{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'invoice_create' %}" class="btn btn-primary">+ New Invoice</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter Tabs -->
+<div style="display:flex; gap:4px; margin-bottom:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:4px; width:fit-content;">
+  {% for s_val, s_label in status_choices %}
+  <a href="?status={{ s_val }}"
+     style="padding:6px 14px; border-radius:6px; font-size:13px; text-decoration:none;
+            {% if status_filter == s_val %}background:var(--brand); color:white;{% else %}color:var(--text-muted);{% endif %}">
+    {{ s_label }}
+  </a>
+  {% endfor %}
+  <a href="{% url 'invoice_list' %}"
+     style="padding:6px 14px; border-radius:6px; font-size:13px; text-decoration:none;
+            {% if not status_filter %}background:var(--brand); color:white;{% else %}color:var(--text-muted);{% endif %}">
+    All
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Client / Vendor</th>
+          <th>Service</th>
+          {% if role in 'admin,manager' %}<th>Created By</th>{% endif %}
+          <th>Invoice Date</th>
+          <th>Due Date</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.invoice_number }}</a></td>
+          <td>{{ inv.vendor_client }}</td>
+          <td>{{ inv.service_title|truncatechars:35 }}</td>
+          {% if role in 'admin,manager' %}
+          <td>{{ inv.created_by.get_full_name|default:inv.created_by.username }}</td>
+          {% endif %}
+          <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+          <td>{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
+          <td style="font-weight:600;">{{ inv.currency }} {{ inv.get_grand_total|floatformat:2 }}</td>
+          <td><span class="badge badge-{{ inv.status }}">{{ inv.get_status_display }}</span></td>
+          <td style="white-space:nowrap;">
+            <a href="{% url 'invoice_detail' inv.pk %}" class="btn btn-outline btn-sm">View</a>
+            {% if inv.status == 'draft' %}
+            <a href="{% url 'invoice_edit' inv.pk %}" class="btn btn-outline btn-sm">Edit</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:40px; color:var(--text-muted);">
+            No invoices found. <a href="{% url 'invoice_create' %}">Create one →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Invoice{% endblock %}
+{% block page_title %}{{ action }} Invoice: {{ invoice.invoice_number }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline btn-sm">← Cancel</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:560px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">
+        {% if action == 'Approve' %}✅ Approve Invoice{% else %}❌ Reject Invoice{% endif %}
+      </span>
+    </div>
+    <div class="card-body">
+      <div style="background:var(--bg); border-radius:8px; padding:16px; margin-bottom:20px;">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">Invoice</div>
+        <div style="font-size:15px; font-weight:600;">{{ invoice.invoice_number }}</div>
+        <div style="font-size:13px; color:var(--text-muted);">{{ invoice.vendor_client }} · {{ invoice.service_title }}</div>
+        <div style="font-size:14px; font-weight:700; color:var(--brand); margin-top:8px;">
+          {{ invoice.currency }} {{ invoice.get_grand_total|floatformat:2 }}
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group" style="margin-bottom:20px;">
+          <label>Comment {% if action == 'Reject' %}(required){% else %}(optional){% endif %}</label>
+          {{ form.comment }}
+        </div>
+        <button type="submit"
+          class="btn {% if action == 'Approve' %}btn-success{% else %}btn-danger{% endif %}"
+          style="width:100%; justify-content:center;">
+          {% if action == 'Approve' %}✅ Confirm Approval{% else %}❌ Confirm Rejection{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

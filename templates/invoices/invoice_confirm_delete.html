@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Delete Invoice{% endblock %}
+{% block page_title %}Delete Invoice{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;">
+  <div class="card">
+    <div class="card-body" style="text-align:center; padding:40px;">
+      <div style="font-size:48px; margin-bottom:16px;">🗑</div>
+      <h2 style="font-family:'Cormorant Garamond',serif; font-size:22px; margin-bottom:8px;">Delete Invoice?</h2>
+      <p style="color:var(--text-muted); margin-bottom:24px;">
+        <strong>{{ invoice.invoice_number }}</strong> — {{ invoice.vendor_client }}<br>
+        This action cannot be undone.
+      </p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline">Cancel</a>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

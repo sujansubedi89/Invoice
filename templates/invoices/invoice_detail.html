@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block page_title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'invoice_list' %}" class="btn btn-outline btn-sm">← Back</a>
+  {% if invoice.status == 'draft' and invoice.created_by == request.user or role == 'admin' %}
+  <a href="{% url 'invoice_edit' invoice.pk %}" class="btn btn-outline btn-sm">✏️ Edit</a>
+  {% endif %}
+  <a href="{% url 'download_pdf' invoice.pk %}" class="btn btn-primary btn-sm">⬇ Download PDF</a>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns: 1fr 320px; gap:24px; align-items:start;">
+
+  <!-- LEFT: Invoice Preview (exact match of the image) -->
+  <div>
+
+    <!-- Approval action bar for managers -->
+    {% if invoice.status == 'pending' and role in 'admin,manager' %}
+    <div class="approval-bar">
+      <p>⏳ This invoice is awaiting your review.</p>
+      <a href="{% url 'approve_invoice' invoice.pk %}" class="btn btn-success btn-sm">✅ Approve</a>
+      <a href="{% url 'reject_invoice' invoice.pk %}" class="btn btn-danger btn-sm">❌ Reject</a>
+    </div>
+    {% endif %}
+
+    <!-- THE INVOICE — styled to match the image exactly -->
+    <div class="invoice-preview">
+      <!-- Header -->
+      <div class="inv-header">
+        <span class="inv-logo-letter">J</span>
+        <div class="inv-company">JYABA TECH PVT LTD</div>
+        <div class="inv-subtitle">Data Engineering Provider</div>
+      </div>
+
+      <!-- Meta info: Issued To + Invoice Number -->
+      <div class="inv-meta">
+        <div class="inv-meta-left">
+          <div class="meta-label">ISSUED TO:</div>
+          <div style="margin-top:6px; font-size:14px; font-weight:500;">{{ invoice.vendor_client }}</div>
+          {% if invoice.vendor_email %}
+          <div style="font-size:12px; color:var(--text-muted);">{{ invoice.vendor_email }}</div>
+          {% endif %}
+          {% if invoice.vendor_address %}
+          <div style="font-size:12px; color:var(--text-muted); margin-top:4px; white-space:pre-line;">{{ invoice.vendor_address }}</div>
+          {% endif %}
+        </div>
+        <div class="inv-meta-right">
+          <div class="meta-row">
+            <span>INVOICE NO:</span>
+            <span><strong>{{ invoice.invoice_number }}</strong></span>
+          </div>
+          <div class="meta-row">
+            <span>DATE:</span>
+            <span>{{ invoice.invoice_date|date:"d.m.Y" }}</span>
+          </div>
+          {% if invoice.due_date %}
+          <div class="meta-row">
+            <span>DUE DATE:</span>
+            <span>{{ invoice.due_date|date:"d.m.Y" }}</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Service Title -->
+      <div class="inv-service-title">SERVICE TITLE:</div>
+      <div class="inv-service-value">{{ invoice.service_title }}</div>
+
+      <!-- Line Items Table -->
+      <table class="inv-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Units</th>
+            <th>Per Unit Net Price</th>
+            <th>Cost</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in invoice.line_items.all %}
+          <tr>
+            <td>{{ item.description }}</td>
+            <td>{{ item.units }}</td>
+            <td>{{ invoice.currency }} {{ item.unit_price }}</td>
+            <td>{{ invoice.currency }} {{ item.unit_price }}</td>
+            <td>{{ invoice.currency }} {{ item.total }}</td>
+          </tr>
+          {% endfor %}
+
+          <!-- Subtotal -->
+          <tr class="subtotal-row">
+            <td colspan="4"><strong>SUBTOTAL</strong></td>
+            <td>{{ subtotal|floatformat:2 }}</td>
+          </tr>
+
+          <!-- Tax -->
+          <tr class="tax-row">
+            <td colspan="4">Tax ({{ invoice.tax_rate }}%)</td>
+            <td>{{ tax_amount|floatformat:2 }}</td>
+          </tr>
+
+          <!-- Grand Total -->
+          <tr class="total-row">
+            <td colspan="4">TOTAL</td>
+            <td>{{ invoice.currency }} {{ grand_total|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Payment Details -->
+      <div class="inv-payment">
+        <div class="inv-payment-label">PAYMENT DETAILS</div>
+        <div class="inv-payment-value">
+          PAYPAL EMAIL: <strong>techjyaba@gmail.com</strong>
+        </div>
+        {% if invoice.status == 'approved' and invoice.approved_by %}
+        <div class="inv-payment-value" style="margin-top:6px;">
+          ✅ Approved by <strong>{{ invoice.approved_by.get_full_name|default:invoice.approved_by.username }}</strong>
+          on {{ invoice.approved_at|date:"d.m.Y" }}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Terms -->
+      <div class="inv-terms">
+        <div class="inv-terms-title">Terms & Conditions</div>
+        <ul>
+          <li>The above mentioned pricings does not include any taxes</li>
+          <li>The cost is payable for the initial service delivery</li>
+          {% if invoice.notes %}
+          <li>{{ invoice.notes }}</li>
+          {% endif %}
+        </ul>
+      </div>
+
+      <div class="inv-thankyou">THANK YOU</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Sidebar info -->
+  <div>
+
+    <!-- Status Card -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-body">
+        <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px;">Status</span>
+          <span class="badge badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">Created by</div>
+        <div style="font-size:13px; font-weight:500;">{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:8px;">{{ invoice.created_at|date:"d M Y, H:i" }}</div>
+
+        {% if invoice.status == 'rejected' and invoice.rejection_reason %}
+        <div class="divider"></div>
+        <div style="font-size:12px; color:var(--danger);">
+          <strong>Rejection reason:</strong><br>{{ invoice.rejection_reason }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Amount Summary -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-body">
+        <div class="flex-between" style="margin-bottom:8px;">
+          <span style="font-size:13px; color:var(--text-muted);">Subtotal</span>
+          <span style="font-size:13px;">{{ invoice.currency }} {{ subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="flex-between" style="margin-bottom:8px;">
+          <span style="font-size:13px; color:var(--text-muted);">Tax ({{ invoice.tax_rate }}%)</span>
+          <span style="font-size:13px;">{{ invoice.currency }} {{ tax_amount|floatformat:2 }}</span>
+        </div>
+        <div class="divider" style="margin:10px 0;"></div>
+        <div class="flex-between">
+          <span style="font-size:14px; font-weight:700;">Total</span>
+          <span style="font-size:16px; font-weight:700; color:var(--brand);">{{ invoice.currency }} {{ grand_total|floatformat:2 }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete (draft only) -->
+    {% if invoice.status == 'draft' and invoice.created_by == request.user or role == 'admin' %}
+    <form method="post" action="{% url 'invoice_delete' invoice.pk %}" onsubmit="return confirm('Delete this invoice?')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger btn-sm" style="width:100%; justify-content:center;">🗑 Delete Invoice</button>
+    </form>
+    {% endif %}
+
+    <!-- Approval Comments / Timeline -->
+    {% if comments %}
+    <div class="card" style="margin-top:16px;">
+      <div class="card-header"><span class="card-title">Activity</span></div>
+      <div class="card-body" style="padding:16px;">
+        <div class="timeline">
+          {% for comment in comments %}
+          <div class="timeline-item">
+            <div>
+              <div class="timeline-text">{{ comment.comment }}</div>
+              <div class="timeline-meta">{{ comment.user.username }} · {{ comment.created_at|date:"d M Y, H:i" }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
