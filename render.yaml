@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: invoice-system
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn invoice_system.wsgi:application"
