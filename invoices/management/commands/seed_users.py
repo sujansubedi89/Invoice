@@ -9,7 +9,7 @@ class Command(BaseCommand):
             ("employee", "employee123", "employee"),
         ]
         for username,password,role in users:
-            if not User.objects.filter(username).exists():
+            if not User.objects.filter(username=username).exists():
                 user=User.objects.create_user(username=username,password=password)
                 UserProfile.objects.create(user=user,
                                            role=role)
