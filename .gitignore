@@ -19,3 +19,4 @@ ENV/
 # OS specific files
 .DS_Store
 Thumbs.db
+seed_data.py
