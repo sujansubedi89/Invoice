@@ -11,7 +11,7 @@ pip install django reportlab pillow
 
 # 2. Set up database + demo data
 python manage.py migrate
-python manage.py shell < seed_data.py   # OR use createsuperuser
+ use createsuperuser
 
 # 3. Run server
 python manage.py runserver
@@ -21,16 +21,6 @@ Visit: http://127.0.0.1:8000
 ---
 
 ## Demo Accounts
-
-| Username   | Password  | Role     |
-|------------|-----------|----------|
-| admin      | demo1234  | Admin    |
-| surendra   | demo1234  | Manager  |
-| tara       | demo1234  | Manager  |
-| roshan     | demo1234  | Manager  |
-| sujan      | demo1234  | Employee |
-
----
 
 ## Project Structure
 
