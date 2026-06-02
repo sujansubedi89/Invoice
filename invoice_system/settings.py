@@ -3,7 +3,7 @@ Django settings for invoice_system project.
 """
 import os
 from pathlib import Path
-
+import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-invoice-system-secret-key-change-in-production'
@@ -19,7 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'invoices',  # Our custom app
+    'invoices.apps.InvoicesConfig',  # Our custom app
 ]
 
 MIDDLEWARE = [
@@ -53,13 +53,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'invoice_system.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
+# Update DATABASES for production (e.g., PostgreSQL)
+DATABASES = {
+    'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
+}
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
 ]

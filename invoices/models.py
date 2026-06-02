@@ -164,4 +164,4 @@ class UserProfile(models.Model):
         return self.role == 'admin'
 
     def is_manager(self):
-        return self.role in ['admin', 'manager']
+     return self.role in ['admin', 'manager']

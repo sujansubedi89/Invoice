@@ -5,9 +5,4 @@ class InvoicesConfig(AppConfig):
     name = 'invoices'
 
     def ready(self):
-        from .init_users import create_demo_users
-
-        try:
-            create_demo_users()
-        except:
-            pass
+        import invoices.signals  # Connect signals when app loads
