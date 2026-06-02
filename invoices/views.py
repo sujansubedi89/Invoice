@@ -379,7 +379,10 @@ def reject_invoice(request, pk):
 def download_pdf(request, pk):
     """Generate and stream a PDF invoice to the browser."""
     invoice = get_object_or_404(Invoice, pk=pk)
-
+    role=get_user_role(request.user)
+    if invoice.status != 'approved' and role not in ['admin','manager']:
+        messages.error(request,'PDF can only be downloaded after the invoice is approved.')
+        return redirect('invoice_detail', pk=pk)
     # Create an in-memory PDF using ReportLab
     buffer = generate_invoice_pdf(invoice)
 

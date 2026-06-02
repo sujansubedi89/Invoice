@@ -174,18 +174,23 @@
  * and real-time total calculations
  */
 
+// The Django formset prefix is "line_items" (from related_name='line_items')
+// All field names are: line_items-0-description, line_items-0-units, etc.
+// Management form field: line_items-TOTAL_FORMS
+const FORMSET_PREFIX = 'line_items';
+
 // Track how many forms exist (Django formset needs this)
-let formCount = parseInt(document.querySelector('[name="form-TOTAL_FORMS"]').value);
+let formCount = parseInt(document.querySelector(`[name="${FORMSET_PREFIX}-TOTAL_FORMS"]`).value);
 
 // Recalculate all totals whenever any input changes
-document.addEventListener('input', function(e) {
-  if (e.target.matches('.li-units, .li-price')) {
+// 'input' = live typing; 'change' = paste, autofill, spinner arrows
+function handleRecalcEvent(e) {
+  if (e.target.matches('.li-units, .li-price') || e.target.name === 'tax_rate') {
     recalcAll();
   }
-  if (e.target.name === 'tax_rate') {
-    recalcAll();
-  }
-});
+}
+document.addEventListener('input', handleRecalcEvent);
+document.addEventListener('change', handleRecalcEvent);
 
 function recalcAll() {
   let subtotal = 0;
@@ -212,20 +217,16 @@ function recalcAll() {
 }
 
 function addLineItem() {
-  /**
-   * Clone the first row's HTML and update all field name/id attributes
-   * to use the new form index. Django formsets require names like:
-   *   form-0-description, form-1-description, form-2-description
-   */
   const container = document.getElementById('lineItemsContainer');
   const firstRow = container.querySelector('.line-item-row');
   const newRow = firstRow.cloneNode(true);
   
   // Update all name/id attributes to use new index
+  // Real prefix is "line_items", so names look like: line_items-0-units
   newRow.id = `row-${formCount}`;
   newRow.querySelectorAll('input, select, textarea').forEach(el => {
-    if (el.name) el.name = el.name.replace(/form-\d+-/, `form-${formCount}-`);
-    if (el.id)   el.id   = el.id.replace(/form-\d+-/, `form-${formCount}-`);
+    if (el.name) el.name = el.name.replace(new RegExp(`${FORMSET_PREFIX}-\\d+-`), `${FORMSET_PREFIX}-${formCount}-`);
+    if (el.id)   el.id   = el.id.replace(new RegExp(`${FORMSET_PREFIX}-\\d+-`), `${FORMSET_PREFIX}-${formCount}-`);
     // Clear values in the new row (except units which defaults to 1)
     if (!el.classList.contains('li-units')) el.value = '';
     else el.value = '1';
@@ -239,7 +240,7 @@ function addLineItem() {
   
   // Tell Django there's one more form
   formCount++;
-  document.querySelector('[name="form-TOTAL_FORMS"]').value = formCount;
+  document.querySelector(`[name="${FORMSET_PREFIX}-TOTAL_FORMS"]`).value = formCount;
 }
 
 function removeLine(btn) {
@@ -255,7 +256,7 @@ function removeLine(btn) {
   recalcAll();
 }
 
-// Run on page load to set initial totals (for edit mode)
-recalcAll();
+// Run on page load to set initial totals (for edit mode with pre-filled values)
+document.addEventListener('DOMContentLoaded', recalcAll);
 </script>
 {% endblock %}

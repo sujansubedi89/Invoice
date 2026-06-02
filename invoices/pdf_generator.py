@@ -226,13 +226,10 @@ def generate_invoice_pdf(invoice):
 
     story.append(Paragraph("PAYMENT DETAILS", payment_bold))
 
-    # Show approval info if approved
-    if invoice.status == 'approved' and invoice.approved_by:
-        story.append(Paragraph(
-            f"APPROVED BY: <b>{invoice.approved_by.get_full_name() or invoice.approved_by.username}</b> "
-            f"on {invoice.approved_at.strftime('%d.%m.%Y') if invoice.approved_at else ''}",
-            payment_val
-        ))
+    story.append(Paragraph(
+    "PayPal Email: <b>techjyaba@gmail.com</b>",
+    payment_val
+))
 
     story.append(Spacer(1, 10*mm))
 
