@@ -1,10 +1,15 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block auth_content %}
 <div class="login-page">
   <div class="login-box">
     <div class="login-brand">
-      <span class="login-logo">J</span>
+      <span class="login-logo">
+          <img src="{% static 'jyaba_logo.jpg' %}" alt="Jyaba Tech Logo" style=" max-width: 150px; /* Adjust the width to fit your design */
+    height: auto;     /* Maintains aspect ratio */
+    display: block;
+    margin: 0 auto 15px auto; ">
+      </span>
       <div class="login-title">Jyaba Tech</div>
       <div class="login-subtitle">Invoice Management System</div>
     </div>

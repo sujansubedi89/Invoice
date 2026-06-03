@@ -3,13 +3,15 @@ PDF GENERATOR - ReportLab Module
 ReportLab draws PDFs like a canvas: you place elements at X,Y coordinates.
 This recreates the exact invoice layout from the image.
 """
+import os
+from django.conf import settings
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer ,Image
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 
@@ -66,7 +68,18 @@ def generate_invoice_pdf(invoice):
         'Logo', fontSize=28, textColor=BRAND_RED,
         alignment=TA_CENTER, fontName='Helvetica-Bold', spaceAfter=2
     )
-    story.append(Paragraph("J", logo_style))
+    logo_path=os.path.join(settings.BASE_DIR,'static','jyaba_logo.jpg')
+    if not os.path.exists(logo_path):
+     logo_path = os.path.join(settings.BASE_DIR, 'staticfiles', 'jyaba_logo.jpg')
+
+    if os.path.exists(logo_path):
+        logo_img = Image(logo_path, width=120,height=50)
+        logo_img.hAlign = 'CENTER'
+        story.append(logo_img)
+    else:   
+        styles=getSampleStyleSheet()
+        story.append(Paragraph("Jyaba Tech", styles['heading1']))
+    # story.append(Paragraph("J", logo_style))
     story.append(Spacer(1, 5*mm))
     story.append(Paragraph("JYABA TECH PVT LTD", header_style))
     story.append(Spacer(1, 5*mm))

@@ -30,7 +30,7 @@ def get_user_role(user):
     try:
         return user.profile.role
     except UserProfile.DoesNotExist:
-        return 'employee'
+        return 'admin'
 
 
 def require_role(*roles):

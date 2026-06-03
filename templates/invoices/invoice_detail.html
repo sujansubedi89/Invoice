@@ -29,7 +29,11 @@
     <div class="invoice-preview">
       <!-- Header -->
       <div class="inv-header">
-        <span class="inv-logo-letter">J</span>
+        {% load static %}
+
+<img src="{% static 'jyaba_logo.jpg' %}"
+     alt="Company Logo"
+     style="height:80px;">
         <div class="inv-company">JYABA TECH PVT LTD</div>
         <div class="inv-subtitle">Data Engineering Provider</div>
       </div>

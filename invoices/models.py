@@ -153,7 +153,7 @@ class UserProfile(models.Model):
         ('employee', 'Employee'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin')
     department = models.CharField(max_length=100, blank=True)
     phone = models.CharField(max_length=20, blank=True)
 
