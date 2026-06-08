@@ -54,20 +54,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'invoice_system.wsgi.application'
 
 
-# Update DATABASES for production (e.g., PostgreSQL)
+
 DATABASES = {
     'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'invoice_db',
-#         'USER': 'postgres',
-#         'PASSWORD': 'pass',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
 ]
