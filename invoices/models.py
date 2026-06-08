@@ -77,18 +77,31 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"{self.invoice_number} - {self.vendor_client}"
+def save(self, *args, **kwargs):
+    if not self.invoice_number:
+        year = timezone.now().year
 
-    def save(self, *args, **kwargs):
-        """Auto-generate invoice number on first save."""
-        if not self.invoice_number:
-            year = timezone.now().year
-            # Count existing invoices this year and increment
-            count = Invoice.objects.filter(
-                created_at__year=year
-            ).count() + 1
-            self.invoice_number = f"INV-{year}-{count:04d}"
-        super().save(*args, **kwargs)
+        last_invoice = (
+            Invoice.objects.filter(
+                invoice_number__startswith=f"INV-{year}-"
+            )
+            .order_by("-id")
+            .first()
+        )
 
+        if last_invoice:
+            last_number = int(
+                last_invoice.invoice_number.split("-")[-1]
+            )
+            next_number = last_number + 1
+        else:
+            next_number = 1
+
+        self.invoice_number = (
+            f"INV-{year}-{next_number:04d}"
+        )
+
+    super().save(*args, **kwargs)
     def get_subtotal(self):
         """Sum all line item totals."""
         return sum(item.total for item in self.line_items.all())

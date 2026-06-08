@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'invoice_create' %}" class="btn btn-primary">+ New Invoice</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total }}</div>
+    <div class="stat-label">Total Invoices</div>
+  </div>
+  <div class="stat-card draft">
+    <div class="stat-value">{{ stats.draft }}</div>
+    <div class="stat-label">Drafts</div>
+  </div>
+  <div class="stat-card pending">
+    <div class="stat-value">{{ stats.pending }}</div>
+    <div class="stat-label">Pending</div>
+  </div>
+  <div class="stat-card approved">
+    <div class="stat-value">{{ stats.approved }}</div>
+    <div class="stat-label">Approved</div>
+  </div>
+  <div class="stat-card rejected">
+    <div class="stat-value">{{ stats.rejected }}</div>
+    <div class="stat-label">Rejected</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.emails_sent }}</div>
+    <div class="stat-label">Emails Sent</div>
+     <div class="stat-label">overdue invoices</div>  </div>
+  <div class="stat-email failed">
+
+     <div class="stat-value">{{ stats.overdue }}</div>
+    <div class="stat-label">overdue invoices</div>
+    <div class="stat-value">{{ stats.emails_failed }}</div>
+</div>
+
+<!-- Recent Invoices -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Recent Invoices</span>
+    <a href="{% url 'invoice_list' %}" class="btn btn-outline btn-sm">View All</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Client / Vendor</th>
+          <th>Service</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in recent %}
+        <tr>
+          <td><a href="{% url 'invoice_detail' inv.pk %}">{{ inv.invoice_number }}</a></td>
+          <td>{{ inv.vendor_client }}</td>
+          <td>{{ inv.service_title|truncatechars:40 }}</td>
+          <td>{{ inv.invoice_date|date:"d M Y" }}</td>
+          <td style="font-weight:600;">{{ inv.currency }} {{ inv.get_grand_total|floatformat:2 }}</td>
+          <td><span class="badge badge-{{ inv.status }}">{{ inv.get_status_display }}</span></td>
+          <td><a href="{% url 'invoice_detail' inv.pk %}" class="btn btn-outline btn-sm">View</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center; padding:32px; color:var(--text-muted);">
+            No invoices yet. <a href="{% url 'invoice_create' %}">Create your first one →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
