@@ -148,10 +148,20 @@
           <button type="submit" name="save_draft" class="btn btn-outline" style="width:100%; margin-bottom:10px; justify-content:center;">
             💾 Save Draft
           </button>
-          <button type="submit" name="submit_approval" class="btn btn-primary" style="width:100%; justify-content:center;">
-            📤 Submit for Approval
+          {% if role ==  'guest' %}
+          <button type="submit" name="save_draft" class="btn btn-primary" style="width:100%; justify-content:center;">
+            📤 Save and Download PDF
           </button>
-
+          {% else %}
+            <button type="submit" name="save_draft" class="btn btn-outline" 
+          style="width:100%; margin-bottom:10px; justify-content:center;">
+    💾 Save Draft
+  </button>
+  <button type="submit" name="submit_approval" class="btn btn-primary" 
+          style="width:100%; justify-content:center;">
+    📤 Submit for Approval
+  </button>
+          {% endif %}
           {% if invoice %}
           <div class="divider" style="margin:16px 0;"></div>
           <a href="{% url 'invoice_detail' invoice.pk %}" class="btn btn-outline" style="width:100%; justify-content:center;">

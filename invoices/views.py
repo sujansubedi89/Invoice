@@ -128,7 +128,12 @@ def dashboard(request):
 
 @login_required
 def invoice_list(request):
-    """List all invoices with filtering by status."""
+    role=getattr(request.user.profile,'role','employee')
+    if role in ['admin','manager']:
+        invoices=Invoice.objects.all()
+    else:
+        invoices=Invoice.objects.filter(created_by=request.user)
+        """List all invoices with filtering by status."""
     role = get_user_role(request.user)
     status_filter = request.GET.get('status', '')
 
@@ -150,6 +155,8 @@ def invoice_list(request):
 
 @login_required
 def invoice_create(request):
+    role = getattr(request.user, 'profile', None)
+    role = role.role if role else 'employee'
     """
     Create a new invoice with line items.
     Uses an InvoiceForm + a LineItemFormSet together in one page.
@@ -166,8 +173,15 @@ def invoice_create(request):
             invoice.created_by = request.user
 
             # Check which button was pressed: Save Draft or Submit
-            if 'submit_approval' in request.POST:
-                invoice.status = 'pending'
+            
+               
+            if role=='guest':
+                    invoice.status='approved'
+                    invoice.approved_by=request.user
+                    invoice.approved_at=timezone.now()
+                    messages.info(request,"Invoiced saved")
+            elif 'submit_approval' in request.POST:
+                 invoice.status = 'pending'
             else:
                 invoice.status = 'draft'
 
@@ -176,9 +190,10 @@ def invoice_create(request):
             # Link the formset to this newly created invoice
             formset.instance = invoice
             formset.save()
-
-            messages.success(request, f'Invoice {invoice.invoice_number} created!')
-            return redirect('invoice_detail', pk=invoice.pk)
+            if role=='guest':
+                return redirect('download_pdf',invoice.pk)
+            return redirect('invoice_detail',invoice.pk)
+            
     else:
         form = InvoiceForm()
         formset = LineItemFormSet()
@@ -187,6 +202,7 @@ def invoice_create(request):
         'form': form,
         'formset': formset,
         'action': 'Create',
+        'role':role,
     })
 
 
@@ -380,7 +396,7 @@ def download_pdf(request, pk):
     """Generate and stream a PDF invoice to the browser."""
     invoice = get_object_or_404(Invoice, pk=pk)
     role=get_user_role(request.user)
-    if invoice.status != 'approved' and role not in ['admin','manager']:
+    if invoice.status != 'approved' and role not in ['admin','manager','guest']:
         messages.error(request,'PDF can only be downloaded after the invoice is approved.')
         return redirect('invoice_detail', pk=pk)
     # Create an in-memory PDF using ReportLab

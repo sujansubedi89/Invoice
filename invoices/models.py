@@ -125,7 +125,9 @@ class UserProfile(models.Model):
         ('admin', 'Admin'),
         ('manager', 'Manager'),
         ('employee', 'Employee'),
+        ('guest','Guest')
     ]
+    # "Guest"
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='employee')
     department = models.CharField(max_length=100, blank=True)
@@ -136,6 +138,8 @@ class UserProfile(models.Model):
 
     def is_admin(self):
         return self.role == 'admin'
+    def is_guest(self):
+        return self.role=='guest'
 
     def is_manager(self):
      return self.role in ['admin', 'manager']

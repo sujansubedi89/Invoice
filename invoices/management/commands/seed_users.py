@@ -7,6 +7,7 @@ class Command(BaseCommand):
                       ("admin", "admin123", "admin"),
             ("manager", "manager123", "manager"),
             ("employee", "employee123", "employee"),
+            ("guest","guest123","guest"),
         ]
         for username,password,role in users:
             if not User.objects.filter(username=username).exists():
