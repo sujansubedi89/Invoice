@@ -49,12 +49,12 @@ class InvoiceForm(forms.ModelForm):
 
 
 class LineItemForm(forms.ModelForm):
-    """Form for a single line item row."""
     class Meta:
         model = LineItem
-        fields = ['description', 'units', 'unit_price']
+        fields = ['description', 'unit_type', 'units', 'unit_price']
         widgets = {
             'description': forms.TextInput(attrs={'class': 'form-input li-desc', 'placeholder': 'Service description'}),
+            'unit_type':   forms.Select(attrs={'class': 'form-input li-type'}),
             'units':       forms.NumberInput(attrs={'class': 'form-input li-units', 'step': '0.01', 'min': '0', 'value': '1'}),
             'unit_price':  forms.NumberInput(attrs={'class': 'form-input li-price', 'step': '0.01', 'min': '0', 'placeholder': '0.00'}),
         }

@@ -81,13 +81,19 @@ class LineItem(models.Model):
     Each row in the invoice table (Description | Units | Price | Cost | Total).
     One invoice can have MANY line items — this is a one-to-many relationship.
     """
+    DURATION_CHOICES = [
+        ('fixed',   'Fixed Price'),
+        ('hourly',  'Per Hour'),
+        ('daily',   'Per Day'),
+        ('monthly', 'Per Month'),
+    ]
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name='line_items'
     )
     description = models.CharField(max_length=300)
     units = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
-
+    unit_type   = models.CharField(max_length=10, choices=DURATION_CHOICES, default='fixed')
     @property
     def total(self):
         """Calculated field: units × unit_price. Not stored in DB."""

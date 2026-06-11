@@ -167,32 +167,25 @@ def invoice_create(request):
         formset = LineItemFormSet(request.POST)
 
         if form.is_valid() and formset.is_valid():
-            # Save invoice but don't commit to DB yet (commit=False)
-            # This lets us set created_by before the final save
-            invoice = form.save(commit=False)
-            invoice.created_by = request.user
+         invoice = form.save(commit=False)
+        invoice.created_by = request.user
 
-            # Check which button was pressed: Save Draft or Submit
-            
-               
-            if role=='guest':
-                    invoice.status='approved'
-                    invoice.approved_by=request.user
-                    invoice.approved_at=timezone.now()
-                    messages.info(request,"Invoiced saved")
-            elif 'submit_approval' in request.POST:
-                 invoice.status = 'pending'
-            else:
-                invoice.status = 'draft'
+        if role == 'guest':
+            invoice.status = 'approved'
+            invoice.approved_by = request.user
+            invoice.approved_at = timezone.now()
+        elif 'submit_approval' in request.POST:
+            invoice.status = 'pending'
+        else:
+            invoice.status = 'draft'
 
-            invoice.save()  # Now actually write to database
+        invoice.save()
+        formset.instance = invoice  # link AFTER invoice.save() gives it a PK
+        formset.save()
 
-            # Link the formset to this newly created invoice
-            formset.instance = invoice
-            formset.save()
-            if role=='guest':
-                return redirect('download_pdf',invoice.pk)
-            return redirect('invoice_detail',invoice.pk)
+        if role == 'guest':
+            return redirect('download_pdf', invoice.pk)
+        return redirect('invoice_detail', invoice.pk)
             
     else:
         form = InvoiceForm()

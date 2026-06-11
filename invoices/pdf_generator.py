@@ -172,7 +172,7 @@ def generate_invoice_pdf(invoice):
     # Data rows for each line item
     for item in invoice.line_items.all():
         table_data.append([
-            Paragraph(item.description, cell_style),
+            Paragraph(f"{item.description}\n({item.get_unit_type_display()})", cell_style),
             Paragraph(str(item.units), cell_center),
             Paragraph(f"{currency} {item.unit_price:.2f}", cell_right),
             Paragraph(f"{currency} {item.unit_price:.2f}", cell_right),

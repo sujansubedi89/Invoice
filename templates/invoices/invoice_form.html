@@ -95,6 +95,7 @@
           <!-- Column headers -->
           <div class="line-items-header">
             <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;">Description</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:center;">Type</span>
             <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:center;">Units</span>
             <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:right;">Unit Price</span>
             <span style="font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:0.8px;text-transform:uppercase;text-align:right;">Total</span>
@@ -103,17 +104,16 @@
 
           <div id="lineItemsContainer">
             {% for item_form in formset %}
-            <div class="line-item-row" id="row-{{ forloop.counter0 }}">
-              {{ item_form.id }}
-              {% if item_form.DELETE %}
-              <div style="display:none;">{{ item_form.DELETE }}</div>
-              {% endif %}
-              {{ item_form.description }}
-              {{ item_form.units }}
-              {{ item_form.unit_price }}
-              <div class="li-total" id="total-{{ forloop.counter0 }}">—</div>
-              <button type="button" class="li-delete-btn" onclick="removeLine(this)">✕</button>
-            </div>
+           <div class="line-item-row" id="row-{{ forloop.counter0 }}">
+  {{ item_form.id }}
+  {% if item_form.DELETE %}<div style="display:none;">{{ item_form.DELETE }}</div>{% endif %}
+  {{ item_form.description }}
+  {{ item_form.unit_type }}      {# ← add this #}
+  {{ item_form.units }}
+  {{ item_form.unit_price }}
+  <div class="li-total" id="total-{{ forloop.counter0 }}">—</div>
+  <button type="button" class="li-delete-btn" onclick="removeLine(this)">✕</button>
+</div>
             {% endfor %}
           </div>
 
@@ -145,22 +145,23 @@
 
           <div class="divider" style="margin:20px 0;"></div>
 
-          <button type="submit" name="save_draft" class="btn btn-outline" style="width:100%; margin-bottom:10px; justify-content:center;">
+          <!-- <button type="submit" name="save_draft" class="btn btn-outline" style="width:100%; margin-bottom:10px; justify-content:center;">
             💾 Save Draft
-          </button>
-          {% if role ==  'guest' %}
-          <button type="submit" name="save_draft" class="btn btn-primary" style="width:100%; justify-content:center;">
-            📤 Save and Download PDF
-          </button>
+          </button> -->
+         {% if role == 'guest' %}
+            <button type="submit" name="download_pdf" value="1" class="btn btn-primary"
+                    style="width:100%; justify-content:center;">
+              📤 Save and Download PDF
+            </button>
           {% else %}
-            <button type="submit" name="save_draft" class="btn btn-outline" 
-          style="width:100%; margin-bottom:10px; justify-content:center;">
-    💾 Save Draft
-  </button>
-  <button type="submit" name="submit_approval" class="btn btn-primary" 
-          style="width:100%; justify-content:center;">
-    📤 Submit for Approval
-  </button>
+            <button type="submit" name="save_draft" value="1" class="btn btn-outline"
+                    style="width:100%; margin-bottom:10px; justify-content:center;">
+              💾 Save Draft
+            </button>
+            <button type="submit" name="submit_approval" value="1" class="btn btn-primary"
+                    style="width:100%; justify-content:center;">
+              📤 Submit for Approval
+            </button>
           {% endif %}
           {% if invoice %}
           <div class="divider" style="margin:16px 0;"></div>
