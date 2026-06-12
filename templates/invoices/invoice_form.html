@@ -22,6 +22,20 @@
 <form method="post" id="invoiceForm">
   {% csrf_token %}
   {{ formset.management_form }}  {# Required hidden fields for the formset #}
+  <div class="card" style="margin-bottom:20px; border-color: var(--brand);">
+    <div class="card-header"><span class="card-title">✨ AI Quick Fill</span></div>
+    <div class="card-body">
+      <div class="form-group full-width">
+        <label>Describe the invoice in plain language</label>
+        <textarea id="aiDescription" class="form-input" rows="3"
+          placeholder="e.g. Invoice ABC Corp, 20 hours of web development at $50/hr plus a $200 design fee, 13% tax, due in 15 days, pay via PayPal to me@example.com"></textarea>
+      </div>
+      <button type="button" id="aiFillBtn" class="btn btn-primary" style="margin-top:8px;">
+        ✨ Generate with AI
+      </button>
+      <span id="aiStatus" style="margin-left:10px;font-size:12px;color:var(--text-muted);"></span>
+    </div>
+  </div>
 
   <div style="display:grid; grid-template-columns: 1fr 360px; gap:24px; align-items:start;">
 
@@ -123,7 +137,51 @@
         </div>
       </div>
     </div>
+<div class="card" style="margin-top:20px;">
+  <div class="card-header">
+    <span class="card-title">Payment Details</span>
+  </div>
+  <div class="card-body">
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>Payment Method</label>
+      {{ payment_form.payment_type }}
+    </div>
 
+    <!-- PayPal section -->
+    <div id="paypal-section">
+      <div class="form-group">
+        <label>PayPal Email</label>
+        {{ payment_form.paypal_email }}
+      </div>
+    </div>
+
+    <!-- Bank section -->
+    <div id="bank-section" style="display:none;">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Bank Name</label>
+          {{ payment_form.bank_name }}
+        </div>
+        <div class="form-group">
+          <label>Account Holder</label>
+          {{ payment_form.account_holder }}
+        </div>
+        <div class="form-group">
+          <label>Account Number</label>
+          {{ payment_form.account_number }}
+        </div>
+        <div class="form-group">
+          <label>Routing Number</label>
+          {{ payment_form.routing_number }}
+        </div>
+        <div class="form-group">
+          <label>SWIFT / BIC Code</label>
+          {{ payment_form.swift_code }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
     <!-- RIGHT: Summary + Actions -->
     <div>
       <div class="card" style="position:sticky; top:80px;">
@@ -267,7 +325,139 @@ function removeLine(btn) {
   recalcAll();
 }
 
+
+
+
+
+
+
+const paymentTypeSelect = document.getElementById('id_payment_type');
+  
+  function togglePaymentSection() {
+    const val = paymentTypeSelect.value;
+    document.getElementById('paypal-section').style.display = val === 'paypal' ? 'block' : 'none';
+    document.getElementById('bank-section').style.display  = val === 'bank'   ? 'block' : 'none';
+  }
+
+  paymentTypeSelect.addEventListener('change', togglePaymentSection);
+  document.addEventListener('DOMContentLoaded', togglePaymentSection);
 // Run on page load to set initial totals (for edit mode with pre-filled values)
 document.addEventListener('DOMContentLoaded', recalcAll);
+// ─────────────────────────────────────────────
+// AI AUTO-FILL
+// ─────────────────────────────────────────────
+document.getElementById('aiFillBtn').addEventListener('click', async () => {
+  const description = document.getElementById('aiDescription').value.trim();
+  const statusEl = document.getElementById('aiStatus');
+  const btn = document.getElementById('aiFillBtn');
+
+  if (!description) {
+    statusEl.textContent = 'Please describe the invoice first.';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Generating...';
+
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  try {
+    const res = await fetch("{% url 'ai_fill_invoice' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ description }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      statusEl.textContent = `Error: ${data.error || 'AI request failed'}`;
+      return;
+    }
+
+    applyAIData(data);
+    statusEl.textContent = '✅ Form filled — review before saving.';
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function setField(name, value) {
+  const el = document.querySelector(`[name="${name}"]`);
+  if (el && value !== undefined && value !== null) el.value = value;
+}
+
+function applyAIData(data) {
+  // Top-level invoice fields
+  setField('vendor_client', data.vendor_client);
+  setField('vendor_email', data.vendor_email);
+  setField('vendor_address', data.vendor_address);
+  setField('service_title', data.service_title);
+  setField('currency', data.currency);
+  setField('tax_rate', data.tax_rate);
+  setField('due_date', data.due_date);
+  setField('notes', data.notes);
+
+  // Payment details
+  if (data.payment_details) {
+    const pd = data.payment_details;
+    setField('payment_type', pd.payment_type);
+    setField('paypal_email', pd.paypal_email);
+    setField('bank_name', pd.bank_name);
+    setField('account_holder', pd.account_holder);
+    setField('account_number', pd.account_number);
+    setField('routing_number', pd.routing_number);
+    setField('swift_code', pd.swift_code);
+
+    if (paymentTypeSelect && pd.payment_type) {
+      paymentTypeSelect.dispatchEvent(new Event('change'));
+    }
+  }
+
+  // Line items: clear extra rows, then fill rows (adding more if needed)
+  // Line items: rebuild all rows from scratch with clean sequential indices
+  const items = (data.line_items && data.line_items.length)
+    ? data.line_items
+    : [{ description: '', unit_type: 'fixed', units: 1, unit_price: 0 }];
+
+  const container = document.getElementById('lineItemsContainer');
+  const templateRow = container.querySelector('.line-item-row').cloneNode(true);
+
+  container.innerHTML = '';
+
+  items.forEach((item, i) => {
+    const row = templateRow.cloneNode(true);
+    row.id = `row-${i}`;
+
+    row.querySelectorAll('input, select, textarea').forEach(el => {
+      if (el.name) el.name = el.name.replace(new RegExp(`${FORMSET_PREFIX}-\\d+-`), `${FORMSET_PREFIX}-${i}-`);
+      if (el.id)   el.id   = el.id.replace(new RegExp(`${FORMSET_PREFIX}-\\d+-`), `${FORMSET_PREFIX}-${i}-`);
+
+      const n = el.name || '';
+      if (n.includes('-description')) el.value = item.description || '';
+      else if (n.includes('-unit_type')) el.value = item.unit_type || 'fixed';
+      else if (n.includes('-units')) el.value = item.units ?? 1;
+      else if (n.includes('-unit_price')) el.value = item.unit_price ?? 0;
+      else if (n.includes('-DELETE')) el.checked = false;
+      else if (n.includes('-id')) el.value = '';
+    });
+
+    const totalCell = row.querySelector('[id^="total-"]');
+    if (totalCell) { totalCell.id = `total-${i}`; totalCell.textContent = '—'; }
+
+    container.appendChild(row);
+  });
+
+  // Reset formset bookkeeping to match the new row count
+  formCount = items.length;
+  document.querySelector(`[name="${FORMSET_PREFIX}-TOTAL_FORMS"]`).value = formCount;
+
+  recalcAll();
+
+}
 </script>
 {% endblock %}

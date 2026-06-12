@@ -13,10 +13,16 @@ from django.utils import timezone
 from django.http import HttpResponse, HttpResponseForbidden
 from django.db.models import Count, Sum, Q
 
+import json
+from django.conf import settings
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.core.mail import EmailMessage
+from .ai_service import generate_invoice_data,AIServiceError
 from .models import Invoice, LineItem, ApprovalComment, UserProfile
 from .forms import (
     LoginForm, InvoiceForm, LineItemFormSet,
-    ApprovalForm, UserCreateForm
+    ApprovalForm, PaymentDetailsForm ,UserCreateForm
 )
 from .pdf_generator import generate_invoice_pdf
 
@@ -157,47 +163,50 @@ def invoice_list(request):
 def invoice_create(request):
     role = getattr(request.user, 'profile', None)
     role = role.role if role else 'employee'
-    """
-    Create a new invoice with line items.
-    Uses an InvoiceForm + a LineItemFormSet together in one page.
-    The formset handles adding/removing multiple line items dynamically.
-    """
+
     if request.method == 'POST':
         form = InvoiceForm(request.POST)
-        formset = LineItemFormSet(request.POST)
+        formset = LineItemFormSet(request.POST, prefix='line_items')
+        payment_form = PaymentDetailsForm(request.POST)
 
-        if form.is_valid() and formset.is_valid():
-         invoice = form.save(commit=False)
-        invoice.created_by = request.user
+        if form.is_valid() and formset.is_valid() and payment_form.is_valid():
+            invoice = form.save(commit=False)
+            invoice.created_by = request.user
 
-        if role == 'guest':
-            invoice.status = 'approved'
-            invoice.approved_by = request.user
-            invoice.approved_at = timezone.now()
-        elif 'submit_approval' in request.POST:
-            invoice.status = 'pending'
+            if role == 'guest':
+                invoice.status = 'approved'
+                invoice.approved_by = request.user
+                invoice.approved_at = timezone.now()
+            elif 'submit_approval' in request.POST:
+                invoice.status = 'pending'
+            else:
+                invoice.status = 'draft'
+
+            invoice.save()
+            formset.instance = invoice  # link AFTER invoice.save() gives it a PK
+            formset.save()
+
+            payment = payment_form.save(commit=False)
+            payment.invoice = invoice
+            payment.save()
+
+            if role == 'guest':
+                return redirect('download_pdf', invoice.pk)
+            return redirect('invoice_detail', invoice.pk)
         else:
-            invoice.status = 'draft'
-
-        invoice.save()
-        formset.instance = invoice  # link AFTER invoice.save() gives it a PK
-        formset.save()
-
-        if role == 'guest':
-            return redirect('download_pdf', invoice.pk)
-        return redirect('invoice_detail', invoice.pk)
-            
+            messages.error(request, 'Please fill all the fields.')
     else:
         form = InvoiceForm()
-        formset = LineItemFormSet()
+        formset = LineItemFormSet(prefix='line_items')
+        payment_form = PaymentDetailsForm()
 
     return render(request, 'invoices/invoice_form.html', {
         'form': form,
         'formset': formset,
+        'payment_form': payment_form,
         'action': 'Create',
-        'role':role,
+        'role': role,
     })
-
 
 @login_required
 def invoice_edit(request, pk):
@@ -208,7 +217,11 @@ def invoice_edit(request, pk):
     # Permission check
     if invoice.created_by != request.user and role != 'admin':
         return HttpResponseForbidden("You cannot edit this invoice.")
-
+    payment_instance = getattr(invoice, 'payment_details', None)
+    payment_form = PaymentDetailsForm(
+    request.POST or None,
+    instance=payment_instance
+    )
     # Prevent editing approved invoices
     if invoice.status == 'approved' and role != 'admin':
         messages.error(request, 'Approved invoices cannot be edited.')
@@ -306,6 +319,32 @@ def approve_invoice(request, pk):
             invoice.approved_by = request.user
             invoice.approved_at = timezone.now()
             invoice.save()
+
+            if invoice.vendor_email:
+                try:
+                    pdf_buffer=generate_invoice_pdf(invoice)
+                    email=EmailMessage(
+                        subject=f"Invoice{invoice.invoice_number} from Jyaba Tech",
+                       body=(
+                           f"Dear {invoice.vendor_client},\n\n"
+                          f"Please find attached your approved invoice "
+                            f"{invoice.invoice_number} for {invoice.service_title}.\n\n"
+                            f"Total due: {invoice.currency} {invoice.get_grand_total():.2f}\n\n"
+                            f"Thank you,\nJyaba Tech Pvt Ltd"
+                       ), 
+                       from_email=settings.DEFAULT_FROM_EMAIL,
+                       to=[invoice.vendor_email]
+                    )
+                    email.attach(
+                        f"invoice_{invoice.invoice_number}.pdf",
+                        pdf_buffer.read(),
+                        'application/pdf',
+                    )
+                    email.send(fail_silently=False)
+                except Exception as e:
+                    {
+                     messages.warning(request,f'Invoice approved,but email failed to :{e}')
+                    }
 
             # Save comment if provided
             comment_text = form.cleaned_data.get('comment', '').strip()
@@ -459,3 +498,22 @@ def user_edit(request, pk):
 # ─────────────────────────────────────────────
 # Add status_choices to invoice_list context
 # (already in Invoice.STATUS_CHOICES but easier to access here)
+@login_required
+@require_POST
+def ai_fill_invoice(request):
+    "Take a free text description return structured invoice"
+    try:
+        body=json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'error':'Invalid JSON body.'},status=400
+                            )
+    description=(body.get('description')or '').strip()
+    if not description:
+        return JsonResponse({
+            "error":"Please describe the invoice first."
+        },status=400)
+    try:
+       data=generate_invoice_data(description)
+    except AIServiceError as e:
+        return JsonResponse({'error':str(e)},status=502)
+    return JsonResponse(data)

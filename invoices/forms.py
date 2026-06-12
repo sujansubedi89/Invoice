@@ -6,7 +6,7 @@ Django forms are Python classes that map directly to HTML <form> elements.
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Invoice, LineItem, UserProfile
+from .models import Invoice, LineItem, UserProfile, PaymentDetails
 
 
 class LoginForm(forms.Form):
@@ -104,3 +104,37 @@ class UserCreateForm(UserCreationForm):
             if not hasattr(field.widget, 'attrs'):
                 continue
             field.widget.attrs.setdefault('class', 'form-input')
+
+class PaymentDetailsForm(forms.ModelForm):
+    class Meta:
+        model=PaymentDetails
+        fields=[
+            'payment_type',
+            'paypal_email',
+            'bank_name','account_holder',
+            'account_number', 'routing_number', 'swift_code',
+        ]
+        widgets={
+            'payment_type':forms.Select(attrs={'class':'form-input','id':'id_payment_type'}),
+            'paypal_email':    forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'paypal@email.com'}),
+                'bank_name':       forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'e.g. Nepal Investment Bank'}),
+                'account_holder':  forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Full account holder name'}),
+                'account_number':  forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Account number'}),
+                'routing_number':  forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Routing number'}),
+                'swift_code':      forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'SWIFT / BIC code'}),
+            }
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        for name in ['paypal_email','bank_name','account_holder','account_number','routing_number','swift_code']:
+            self.fields[name].required=False
+
+    def clean(self):
+        cleaned=super().clean()
+        ptype=cleaned.get('payment_type')
+        if ptype=='paypal'and not cleaned.get('paypal_email'):
+            self.add_error('paypal_email','Paypal email is required')
+        elif ptype =='blank':
+            for field in ['bank_name','account_holder','account_number']:
+                if not cleaned.get(field):
+                    self.add_error(field,'This field is required for bank trnsfer')
+        return cleaned

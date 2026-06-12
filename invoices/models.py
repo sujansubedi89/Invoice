@@ -6,6 +6,8 @@ Django auto-creates the SQL tables from these Python classes.
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from decimal import Decimal, ROUND_HALF_UP
+
 import uuid
 
 
@@ -17,6 +19,7 @@ class Invoice(models.Model):
         ('rejected', 'Rejected'),
     ]
     CURRENCY_CHOICES = [
+        ('NPR','NPR-Nepali Rupee'),
         ('USD', 'USD - US Dollar'),
         ('EUR', 'EUR - Euro'),
         ('GBP', 'GBP - British Pound'),
@@ -94,10 +97,11 @@ class LineItem(models.Model):
     units = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     unit_type   = models.CharField(max_length=10, choices=DURATION_CHOICES, default='fixed')
+
     @property
     def total(self):
-        """Calculated field: units × unit_price. Not stored in DB."""
-        return self.units * self.unit_price
+        result = self.units * self.unit_price
+        return result.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def __str__(self):
         return f"{self.description} x{self.units}"
@@ -149,3 +153,60 @@ class UserProfile(models.Model):
 
     def is_manager(self):
      return self.role in ['admin', 'manager']
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class PaymentDetails(models.Model):
+
+    PAYMENT_TYPE_CHOICES=[
+        ('paypal','PayPal'),
+        ('bank','Bank Transfer'),]
+    invoice=models.OneToOneField(
+        
+            Invoice,on_delete=models.CASCADE,related_name='payment_details'
+
+        )
+    payment_type=models.CharField(
+        max_length=10,choices=PAYMENT_TYPE_CHOICES,default='paypal'
+    )
+    paypal_email=models.EmailField(blank=True)
+    bank_name=models.CharField(max_length=100,blank=True)
+    account_number=models.CharField(max_length=90,blank=True)
+    account_holder=models.CharField(max_length=90,blank=True)
+    routing_number=models.CharField(max_length=50,blank=True)
+    
+    swift_code=models.CharField(max_length=20,blank=True)
+    def __str__(self):
+        return f"Payment details for {self.invoice.invoice_number}"

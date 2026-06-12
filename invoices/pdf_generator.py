@@ -11,7 +11,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer ,Image
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 
@@ -21,6 +21,14 @@ LIGHT_GRAY  = colors.HexColor('#F5F0EE')
 MID_GRAY    = colors.HexColor('#CCCCCC')
 DARK_TEXT   = colors.HexColor('#2C2C2C')
 TABLE_HEADER_BG = colors.HexColor('#D9D3D0')
+
+# Friendly labels for line item unit types, shown next to the description
+UNIT_TYPE_LABELS = {
+    'fixed':   'Fixed',
+    'hourly':  'per hr',
+    'daily':   'per day',
+    'monthly': 'per month',
+}
 
 
 def generate_invoice_pdf(invoice):
@@ -63,23 +71,18 @@ def generate_invoice_pdf(invoice):
         spaceAfter=8
     )
 
-    # Company logo letter "J" in brand red
-    logo_style = ParagraphStyle(
-        'Logo', fontSize=28, textColor=BRAND_RED,
-        alignment=TA_CENTER, fontName='Helvetica-Bold', spaceAfter=2
-    )
-    logo_path=os.path.join(settings.BASE_DIR,'static','jyaba_logo.jpg')
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'jyaba_logo.jpg')
     if not os.path.exists(logo_path):
-     logo_path = os.path.join(settings.BASE_DIR, 'staticfiles', 'jyaba_logo.jpg')
+        logo_path = os.path.join(settings.BASE_DIR, 'staticfiles', 'jyaba_logo.jpg')
 
     if os.path.exists(logo_path):
-        logo_img = Image(logo_path, width=120,height=50)
+        # Slightly smaller logo than before (was 120x50)
+        logo_img = Image(logo_path, width=90, height=38)
         logo_img.hAlign = 'CENTER'
         story.append(logo_img)
-    else:   
-        styles=getSampleStyleSheet()
+    else:
         story.append(Paragraph("Jyaba Tech", styles['heading1']))
-    # story.append(Paragraph("J", logo_style))
+
     story.append(Spacer(1, 5*mm))
     story.append(Paragraph("JYABA TECH PVT LTD", header_style))
     story.append(Spacer(1, 5*mm))
@@ -151,6 +154,10 @@ def generate_invoice_pdf(invoice):
         'Cell', fontSize=9, fontName='Helvetica',
         textColor=DARK_TEXT, alignment=TA_LEFT
     )
+    cell_sub_style = ParagraphStyle(
+        'CellSub', fontSize=8, fontName='Helvetica-Oblique',
+        textColor=colors.HexColor('#777777'), alignment=TA_LEFT
+    )
     cell_right = ParagraphStyle(
         'CellRight', fontSize=9, fontName='Helvetica',
         textColor=DARK_TEXT, alignment=TA_RIGHT
@@ -160,21 +167,21 @@ def generate_invoice_pdf(invoice):
         textColor=DARK_TEXT, alignment=TA_CENTER
     )
 
-    # Table header row
+    # Table header row — 4 columns now (COST column removed, was duplicate of unit price)
     table_data = [[
         Paragraph("DESCRIPTION", col_header_style),
         Paragraph("UNITS", col_header_style),
         Paragraph("PER UNIT NET PRICE", col_header_style),
-        Paragraph("COST", col_header_style),
         Paragraph("TOTAL", col_header_style),
     ]]
 
     # Data rows for each line item
     for item in invoice.line_items.all():
+        unit_label = UNIT_TYPE_LABELS.get(item.unit_type, item.get_unit_type_display())
+        desc_html = f"{item.description}<br/><font size='8' color='#777777'>({unit_label})</font>"
         table_data.append([
-            Paragraph(f"{item.description}\n({item.get_unit_type_display()})", cell_style),
+            Paragraph(desc_html, cell_style),
             Paragraph(str(item.units), cell_center),
-            Paragraph(f"{currency} {item.unit_price:.2f}", cell_right),
             Paragraph(f"{currency} {item.unit_price:.2f}", cell_right),
             Paragraph(f"{currency} {item.total:.2f}", cell_right),
         ])
@@ -189,20 +196,20 @@ def generate_invoice_pdf(invoice):
     total_val    = ParagraphStyle('TotalVal', fontSize=10, fontName='Helvetica-Bold', textColor=DARK_TEXT, alignment=TA_RIGHT)
 
     table_data.append([
-        Paragraph("SUBTOTAL", summary_bold), '', '', '',
-        Paragraph(f"{subtotal:.2f}", cell_right)
+        Paragraph("SUBTOTAL", summary_bold), '', '',
+        Paragraph(f"{currency} {subtotal:.2f}", cell_right)
     ])
     table_data.append([
-        '', '', '', Paragraph("Tax", cell_right),
-        Paragraph(f"{tax_amount:.2f}", cell_right)
+        '', '', Paragraph("Tax", cell_right),
+        Paragraph(f"{currency} {tax_amount:.2f}", cell_right)
     ])
     table_data.append([
-        '', '', '', Paragraph("TOTAL", total_bold),
+        '', '', Paragraph("TOTAL", total_bold),
         Paragraph(f"{currency} {grand_total:.2f}", total_val)
     ])
 
-    # Column widths: Description gets the most space
-    col_widths = [65*mm, 20*mm, 35*mm, 30*mm, 20*mm]
+    # Column widths: Description gets the most space (4 cols, total ~170mm)
+    col_widths = [85*mm, 25*mm, 35*mm, 25*mm]
 
     items_table = Table(table_data, colWidths=col_widths, repeatRows=1)
     items_table.setStyle(TableStyle([
@@ -227,22 +234,37 @@ def generate_invoice_pdf(invoice):
         ('BOTTOMPADDING',(0,0), (-1,-1), 6),
         ('LEFTPADDING',  (0,0), (-1,-1), 6),
         ('RIGHTPADDING', (0,0), (-1,-1), 6),
-        # Span SUBTOTAL across first 4 cols
-        ('SPAN',         (0,-3), (3,-3)),
+        # Span SUBTOTAL across first 3 cols (now 4 cols total)
+        ('SPAN',         (0,-3), (2,-3)),
     ]))
     story.append(items_table)
     story.append(Spacer(1, 8*mm))
 
     # ── PAYMENT DETAILS ───────────────────────────────────────────────────────
     payment_bold = ParagraphStyle('PayBold', fontSize=9, fontName='Helvetica-Bold', textColor=DARK_TEXT, spaceAfter=2)
-    payment_val  = ParagraphStyle('PayVal',  fontSize=9, fontName='Helvetica-Oblique', textColor=DARK_TEXT)
+    payment_val  = ParagraphStyle('PayVal',  fontSize=9, fontName='Helvetica-Oblique', textColor=DARK_TEXT, leading=13)
 
     story.append(Paragraph("PAYMENT DETAILS", payment_bold))
 
-    story.append(Paragraph(
-    "PayPal Email: <b>techjyaba@gmail.com</b>",
-    payment_val
-))
+    try:
+        payment = invoice.payment_details  # OneToOneField reverse lookup
+
+        if payment.payment_type == 'paypal':
+            payment_text = f"PayPal Email: {payment.paypal_email}"
+        else:
+            # Each field on its own line (vertical layout)
+            lines = [f"Bank: {payment.bank_name}"]
+            lines.append(f"Account Holder: {payment.account_holder}")
+            lines.append(f"Account Number: {payment.account_number}")
+            if payment.routing_number:
+                lines.append(f"Routing Number: {payment.routing_number}")
+            if payment.swift_code:
+                lines.append(f"SWIFT/BIC: {payment.swift_code}")
+            payment_text = "<br/>".join(lines)
+    except Exception:
+        payment_text = "No payment details added"
+
+    story.append(Paragraph(payment_text, payment_val))
 
     story.append(Spacer(1, 10*mm))
 
