@@ -17,6 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+    "anymail",
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'invoices.apps.InvoicesConfig',  # Our custom app
@@ -100,18 +101,19 @@ GROQ_API_KEY = config('GROQ_API_KEY')
 GROQ_MODEL=config('GROQ_MODEL')
 
 # ── Email ──────────────────────────────────────────────────────────────
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = config('EMAIL_HOST')
-EMAIL_PORT = config('EMAIL_PORT',cast=int)
-
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
+# EMAIL_HOST = config('EMAIL_HOST')
+# EMAIL_PORT = config('EMAIL_PORT',cast=int)
+ANYMAIL = { "BREVO_API_KEY": config("BREVO_API_KEY"),
+}
+# EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+# EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 
 
 
-EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+# EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 
 # ── Auth redirects ─────────────────────────────────────────────────────
 LOGIN_URL = '/login/'
