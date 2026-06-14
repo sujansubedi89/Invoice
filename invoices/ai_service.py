@@ -7,7 +7,7 @@ import json
 import requests
 from django.conf import settings
 
-GEMINI_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 SYSTEM_PROMPT = """You are an assistant that extracts structured invoice data
 from a short free-text description written by a freelancer or small business.
@@ -56,44 +56,47 @@ class AIServiceError(Exception):
 
 
 def generate_invoice_data(description: str) -> dict:
-    if not settings.GEMINI_API_KEY:
-        raise AIServiceError("GEMINI_API_KEY is not configured.")
+    if not settings.GROQ_API_KEY:
+        raise AIServiceError("GROQ_API_KEY is not configured.")
 
-    url = GEMINI_URL_TEMPLATE.format(model=settings.GEMINI_MODEL)
-    headers = {
+  
+    headers = {"Authorization": f"Bearer { settings.GROQ_API_KEY}",
         "Content-Type": "application/json",
-        "x-goog-api-key": settings.GEMINI_API_KEY,
+        
     }
     payload = {
-        "system_instruction": {
-            "parts": [{"text": SYSTEM_PROMPT}]
-        },
-        "contents": [
-            {"role": "user", "parts": [{"text": description}]}
-        ],
-        "generationConfig": {
-            "temperature": 0.2,
-            "responseMimeType": "application/json",
-        },
-    }
+        "model":settings.GROQ_MODEL,
 
+        "messages":[
+            {
+                "role":"system",
+                "content":SYSTEM_PROMPT,
+            },
+        {
+         "role":"user",
+         "content":description,
+        },],
+        "response_format":{
+            "type":"json_object"
+        }
+        }
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=30)
+        resp=requests.post(
+            GROQ_URL,
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
         if not resp.ok:
-            raise AIServiceError(f"Gemini returned {resp.status_code}: {resp.text[:300]}")
+             raise AIServiceError(f"Grok returned {resp.status_code}: {resp.text[:300]}")
     except requests.RequestException as e:
-        raise AIServiceError(f"Gemini request failed: {e}")
+            raise AIServiceError(f"Groq request failed: {e}")
 
     data = resp.json()
     try:
-        content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError):
         raise AIServiceError(f"Unexpected Gemini response: {data}")
-
-    if content.startswith("```"):
-        content = content.strip("`")
-        if content.startswith("json"):
-            content = content[4:]
 
     try:
         return json.loads(content)

@@ -96,8 +96,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── AI (OpenRouter) ────────────────────────────────────────────────────
-GEMINI_API_KEY = config('GEMINI_API_KEY')
-GEMINI_MODEL=config('GEMINI_MODEL')
+GROQ_API_KEY = config('GROQ_API_KEY')
+GROQ_MODEL=config('GROQ_MODEL')
 
 # ── Email ──────────────────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

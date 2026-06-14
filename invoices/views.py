@@ -191,7 +191,35 @@ def invoice_create(request):
             payment.save()
 
             if role == 'guest':
+                # Send email with PDF attachment
+                recipient = invoice.vendor_email  # or wherever guest's email is stored
+                if recipient:
+                    try:
+                        from django.core.mail import EmailMessage
+                        pdf_buffer = generate_invoice_pdf(invoice)
+                        email = EmailMessage(
+                            subject=f"Invoice {invoice.invoice_number} from Jyaba Tech",
+                            body=(
+                                f"Dear {invoice.vendor_client},\n\n"
+                                f"Please find attached your invoice "
+                                f"{invoice.invoice_number} for {invoice.service_title}.\n\n"
+                                f"Total due: {invoice.currency} {invoice.get_grand_total():.2f}\n\n"
+                                f"Thank you,\nJyaba Tech Pvt Ltd"
+                            ),
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=[recipient],
+                        )
+                        email.attach(
+                            f"invoice_{invoice.invoice_number}.pdf",
+                            pdf_buffer.read(),
+                            'application/pdf',
+                        )
+                        email.send(fail_silently=False)
+                    except Exception as e:
+                        messages.warning(request, f'Invoice saved, but email failed: {e}')
+
                 return redirect('download_pdf', invoice.pk)
+
             return redirect('invoice_detail', invoice.pk)
         else:
             messages.error(request, 'Please fill all the fields.')
