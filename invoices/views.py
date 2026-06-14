@@ -216,9 +216,10 @@ def invoice_create(request):
                         )
                         email.send(fail_silently=False)
                     except Exception as e:
+                        logger.error(f"Failed to send invoice email: {e}")
                         messages.warning(request, f'Invoice saved, but email failed: {e}')
 
-                return redirect('download_pdf', invoice.pk)
+                    return redirect('download_pdf', invoice.pk)
 
             return redirect('invoice_detail', invoice.pk)
         else:
