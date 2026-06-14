@@ -1,0 +1,29 @@
+[33mbfa697b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m remove test email file
+[33m43ee171[m updated for auto send  email and aiss
+[33md4cd32b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m updated for auto send  email and ais
+[33m426bae4[m updated for auto send  email and ai
+[33m16c98e5[m hii
+[33ma9d0686[m hi
+[33m38c06c2[m email notification + AI fill prompt
+[33m3c1f1cf[m generat with ai button
+[33m3ec743c[m  added
+[33m6d96119[m added guest account for easy
+[33m2393df6[m fix
+[33m05d3739[m fix invoice geenration
+[33m7510a1c[m Updated logos and branding
+[33mba4d837[m updated logo
+[33m0cdc9e0[m Delete db.sqlite3
+[33m8023af8[m invoiceupdated
+[33m3202852[m fix seed users
+[33mf718e86[m postgres setup
+[33m02c50ec[m add demo users
+[33m62f7ed6[m Add files via upload
+[33mf2fac87[m setup whitenoise
+[33m6412a12[m Update README.md
+[33m5a72c40[m chore: clear git cache and apply gitignore rules
+[33m3e05ecb[m updated
+[33mf441fb8[m prepare for render deployment
+[33m0b0201e[m updated
+[33m65daac8[m Update README.md
+[33mca58908[m fix  invoice pdf
+[33m67ee9a2[m first commit
