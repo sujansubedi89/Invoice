@@ -387,10 +387,11 @@ document.getElementById('aiFillBtn').addEventListener('click', async () => {
 });
 
 function setField(name, value) {
-  const el = document.querySelector(`[name="${name}"]`);
-  if (el && value !== undefined && value !== null) el.value = value;
+    const el = document.querySelector(`[name="${name}"]`);
+    if (el && value !== undefined && value !== null && value !== '') {
+        el.value = value;
+    }
 }
-
 function applyAIData(data) {
   // Top-level invoice fields
   setField('vendor_client', data.vendor_client);

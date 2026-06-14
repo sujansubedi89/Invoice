@@ -216,10 +216,12 @@ def invoice_create(request):
                             'application/pdf',
                         )
                         email.send(fail_silently=False)
+                        messages.success(request, f'Invoice emailed to {recipient}.')
                     except Exception as e:
                         logger.error(f"Failed to send invoice email: {e}")
                         messages.warning(request, f'Invoice saved, but email failed: {e}')
-
+                else:
+                    messages.info(request, 'Invoice saved, but no client email was provided — email not sent.')
                     return redirect('download_pdf', invoice.pk)
 
             return redirect('invoice_detail', invoice.pk)
@@ -353,6 +355,7 @@ def approve_invoice(request, pk):
             if invoice.vendor_email:
                 try:
                     pdf_buffer=generate_invoice_pdf(invoice)
+                    pdf_buffer.seek(0)
                     email=EmailMessage(
                         subject=f"Invoice{invoice.invoice_number} from Jyaba Tech",
                        body=(
@@ -371,11 +374,12 @@ def approve_invoice(request, pk):
                         'application/pdf',
                     )
                     email.send(fail_silently=False)
+                    messages.success(request, f'Invoice emailed to {invoice.vendor_email}.')
                 except Exception as e:
-                    {
-                     messages.warning(request,f'Invoice approved,but email failed to :{e}')
-                    }
-
+                   logger.error(f"Invoice email failed: {e}")
+                   messages.warning(request, f"Invoice approved, but email failed: {e}")
+            else:
+                 messages.info(request, "Invoice approved, but no client email on file — email not sent.")
             # Save comment if provided
             comment_text = form.cleaned_data.get('comment', '').strip()
             if comment_text:
