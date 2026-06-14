@@ -25,7 +25,8 @@ from .forms import (
     ApprovalForm, PaymentDetailsForm ,UserCreateForm
 )
 from .pdf_generator import generate_invoice_pdf
-
+import logging
+logger = logging.getLogger(__name__)
 
 # ─────────────────────────────────────────────
 # HELPERS
