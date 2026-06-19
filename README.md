@@ -36,11 +36,11 @@ The Invoice Management System enables a business to manage the full lifecycle of
 
 ## Demo and Live Deployment
 
-**Video walkthrough:** [Loom Demo]( https://www.loom.com/share/9c392e9b2bea42149582ea2071bc6c09 )
+**Video walkthrough CLICK TO VIEW :** [Loom Demo]( https://www.loom.com/share/9c392e9b2bea42149582ea2071bc6c09 )
 
 A recorded walkthrough covering the core invoice workflow, role-based access, AI auto-fill, and PDF generation.
 
-**Live deployment:** [https://your-app-name.onrender.com]( [https://your-app-name.onrender.com ](https://invoice-7qc7.onrender.com/))
+**Live deployment CLICK TO VIEW :** (https://invoice-7qc7.onrender.com/))
  Demo user guest password :guest123
 > **Note:** This deployment was previously hosted on Render's free tier. Free-tier services spin down after periods of inactivity and may take up to 60 seconds to respond to the first request after idling. The instance may also be suspended if Render's free-tier usage limits have been exceeded. For a guaranteed-available environment, refer to the local installation instructions below.
 
